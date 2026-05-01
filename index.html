@@ -429,15 +429,9 @@
 
         let userProfile = JSON.parse(localStorage.getItem('raindrop_user')) || { name: 'John Doe', photoUrl: '' };
 
-        let collections = JSON.parse(localStorage.getItem('raindrop_collections')) || [
-            { id: 'c1', name: 'Design Inspiration', color: '#FF9F0A', iconUrl: null },
-            { id: 'c2', name: 'Web Development', color: '#32ADE6', iconUrl: null }
-        ];
+        let collections = JSON.parse(localStorage.getItem('raindrop_collections')) || [];
         
-        let bookmarks = JSON.parse(localStorage.getItem('raindrop_bookmarks')) || [
-            { id: '1', url: "https://dribbble.com", title: "Dribbble", desc: "Discover the world's top designers.", domain: "dribbble.com", date: "Just now", img: "https://images.unsplash.com/photo-1561070791-2526d30994b5?auto=format&fit=crop&q=80&w=600&h=300", collectionId: 'c1' },
-            { id: '2', url: "https://github.com", title: "GitHub", desc: "Where the world builds software.", domain: "github.com", date: "Just now", img: "https://images.unsplash.com/photo-1618401471353-b98afee0b2eb?auto=format&fit=crop&q=80&w=600&h=300", collectionId: 'c2' }
-        ];
+        let bookmarks = JSON.parse(localStorage.getItem('raindrop_bookmarks')) || [];
 
         localStorage.setItem('raindrop_user', JSON.stringify(userProfile));
         localStorage.setItem('raindrop_collections', JSON.stringify(collections));
