@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <!-- Added maximum-scale=1.0 to prevent annoying auto-zoom on input focus in Android -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ramesh Kumar Mallik</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            /* Light Theme */
+            --bg-sidebar: #f5f5f7;
+            --bg-main: #ffffff;
+            --bg-card: #ffffff;
+            --bg-hover: #e8e8ea;
+            --border-color: #e3e3e8;
+            --text-primary: #1d1d1f;
+            --text-secondary: #86868b;
+            --accent-color: #007aff;
+            --danger-color: #ff3b30;
+            --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
+            --modal-overlay: rgba(0,0,0,0.4);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                /* Dark Theme */
+                --bg-sidebar: #1e1e20;
+                --bg-main: #141415;
+                --bg-card: #28282b;
+                --bg-hover: #313135;
+                --border-color: #38383c;
+                --text-primary: #f5f5f7;
+                --text-secondary: #98989d;
+                --shadow-sm: 0 2px 8px rgba(0,0,0,0.2);
+                --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+                --modal-overlay: rgba(0,0,0,0.7);
+            }
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+
+        body { background-color: var(--bg-main); color: var(--text-primary); height: 100vh; overflow: hidden; display: flex; }
+
+        /* --- Mobile Overlay --- */
+        .sidebar-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--modal-overlay); z-index: 40; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+        .sidebar-overlay.active { opacity: 1; pointer-events: auto; }
+
+        /* --- Sidebar --- */
+        .sidebar { width: 260px; background-color: var(--bg-sidebar); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; z-index: 50; transition: transform 0.3s ease; }
+        .user-profile { padding: 20px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid var(--border-color); cursor: pointer; transition: background 0.2s; }
+        .user-profile:hover { background-color: var(--bg-hover); }
+        .user-avatar { width: 32px; height: 32px; border-radius: 50%; background-color: var(--accent-color); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; background-size: cover; background-position: center; }
+        
+        .nav-section { padding: 15px 10px; overflow-y: auto; flex: 1; }
+        .nav-section-title { font-size: 11px; text-transform: uppercase; color: var(--text-secondary); font-weight: 600; letter-spacing: 0.5px; margin: 10px 0 10px 10px; display: flex; justify-content: space-between; align-items: center; padding-right: 10px; }
+        .nav-item { display: flex; align-items: center; padding: 8px 10px; border-radius: 6px; cursor: pointer; color: var(--text-primary); text-decoration: none; font-size: 14px; margin-bottom: 2px; width: 100%; text-align: left; background: none; border: none; }
+        .nav-item:hover, .nav-item.active { background-color: var(--bg-hover); }
+        .nav-item i.icon-main { width: 24px; color: var(--text-secondary); font-size: 14px; text-align: left; }
+        .nav-item.active i.icon-main { color: var(--accent-color) !important; }
+        .item-count { margin-left: auto; font-size: 12px; color: var(--text-secondary); pointer-events: none; }
+
+        .collection-icon-img { width: 16px; height: 16px; border-radius: 4px; object-fit: cover; margin-right: 8px; margin-left: 4px; }
+
+        .nav-item-wrapper { position: relative; display: flex; align-items: center; }
+        .nav-item-edit { position: absolute; right: 5px; opacity: 0; background: var(--bg-hover); border: none; border-radius: 4px; padding: 4px 6px; cursor: pointer; color: var(--text-secondary); transition: opacity 0.2s; font-size: 12px; }
+        .nav-item-wrapper:hover .nav-item-edit { opacity: 1; }
+        .nav-item-wrapper:hover .item-count { opacity: 0; }
+
+        .sidebar-footer { padding: 15px; border-top: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 8px; background: var(--bg-sidebar); }
+        .btn-sidebar-action { width: 100%; padding: 10px; background: transparent; border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 6px; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; transition: background 0.2s; }
+        .btn-sidebar-action:hover { background: var(--bg-hover); }
+
+        /* --- Main Content --- */
+        .main-content { flex: 1; display: flex; flex-direction: column; background-color: var(--bg-main); width: 100%; }
+        .header { height: 64px; padding: 0 24px; display: flex; align-items: center; border-bottom: 1px solid var(--border-color); gap: 15px; }
+        
+        .menu-toggle { display: none; background: none; border: none; color: var(--text-primary); font-size: 20px; cursor: pointer; padding: 5px; }
+        
+        .collection-title { font-size: 18px; font-weight: 600; min-width: max-content; }
+        .search-container { flex: 1; max-width: 600px; position: relative; }
+        .search-container i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); }
+        .search-input { width: 100%; padding: 10px 10px 10px 36px; border-radius: 8px; border: 1px solid var(--border-color); background-color: var(--bg-sidebar); color: var(--text-primary); font-size: 14px; outline: none; transition: border 0.2s; }
+        .search-input:focus { border-color: var(--accent-color); }
+        .header-actions { display: flex; gap: 10px; margin-left: auto; align-items: center; }
+        
+        .icon-btn { background: none; border: none; color: var(--text-secondary); font-size: 16px; cursor: pointer; padding: 8px; border-radius: 6px; display: flex; align-items: center; justify-content: center; }
+        .icon-btn:hover, .icon-btn.active { background-color: var(--bg-hover); color: var(--text-primary); }
+        .add-btn-text { font-size: 14px; font-weight: 500; font-family: inherit; margin-left: 6px; }
+
+        /* --- Content Layouts (Grid & List) --- */
+        .content-area { flex: 1; padding: 24px; overflow-y: auto; }
+        
+        .view-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+        
+        .view-list { display: flex; flex-direction: column; gap: 12px; }
+        .view-list .bookmark-card { flex-direction: row; height: 90px; }
+        .view-list .card-cover { width: 140px; height: 100%; flex-shrink: 0; }
+        .view-list .card-body { padding: 12px 16px; flex-direction: row; align-items: center; gap: 16px; }
+        .view-list .card-title { margin-bottom: 0; flex: 1; -webkit-line-clamp: 1; min-width: 150px;}
+        .view-list .card-desc { margin-bottom: 0; flex: 2; -webkit-line-clamp: 1; }
+        .view-list .card-footer { min-width: 140px; justify-content: flex-end; }
+
+        /* Shared Card Styles */
+        .bookmark-card { background-color: var(--bg-card); border-radius: 10px; border: 1px solid var(--border-color); overflow: hidden; transition: box-shadow 0.2s, transform 0.2s; cursor: pointer; display: flex; flex-direction: column; position: relative; }
+        .bookmark-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+        .card-cover { height: 140px; background-color: var(--bg-hover); background-size: cover; background-position: center; }
+        .card-body { padding: 16px; display: flex; flex-direction: column; flex: 1; }
+        .card-title { font-size: 14px; font-weight: 600; line-height: 1.4; margin-bottom: 6px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .card-desc { font-size: 12px; color: var(--text-secondary); line-height: 1.4; margin-bottom: 12px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; flex: 1; }
+        .card-footer { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-secondary); }
+        .favicon { width: 16px; height: 16px; border-radius: 4px; background: var(--bg-hover); flex-shrink: 0;}
+        .domain { margin-right: auto; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
+
+        .card-edit-btn { position: absolute; top: 10px; right: 10px; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; padding: 6px; font-size: 12px; cursor: pointer; opacity: 0; transition: opacity 0.2s; box-shadow: var(--shadow-sm); z-index: 10; }
+        /* Always show edit button on touch devices since there's no hover */
+        @media (hover: none) { .card-edit-btn { opacity: 1; } }
+        .bookmark-card:hover .card-edit-btn { opacity: 1; }
+        .card-edit-btn:hover { background: var(--bg-hover); }
+
+        /* --- Modals --- */
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--modal-overlay); z-index: 100; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.2s; padding: 15px; }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+        .modal { background: var(--bg-card); width: 100%; max-width: 450px; border-radius: 12px; box-shadow: var(--shadow-md); border: 1px solid var(--border-color); transform: translateY(20px); transition: transform 0.2s; max-height: 90vh; display: flex; flex-direction: column; }
+        .modal-overlay.active .modal { transform: translateY(0); }
+        .modal-header { padding: 16px 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;}
+        .modal-header h3 { font-size: 16px; font-weight: 600; }
+        .modal-body { padding: 20px; overflow-y: auto; }
+        
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500;}
+        .form-control { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); background-color: var(--bg-main); color: var(--text-primary); font-size: 14px; outline: none; }
+        .form-control:focus { border-color: var(--accent-color); }
+        input[type="file"].form-control { padding: 7px; font-size: 13px; }
+        textarea.form-control { resize: vertical; min-height: 80px; }
+        input[type="color"].form-control { padding: 2px; height: 38px; cursor: pointer; }
+
+        .modal-footer { padding: 16px 20px; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: var(--bg-sidebar); border-radius: 0 0 12px 12px; flex-shrink: 0;}
+        .btn { padding: 8px 16px; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: pointer; border: none; }
+        .btn-primary { background: var(--accent-color); color: white; }
+        .btn-primary:hover { opacity: 0.9; }
+        .btn-secondary { background: var(--bg-hover); color: var(--text-primary); }
+        .btn-secondary:hover { filter: brightness(0.95); }
+        .btn-danger { color: var(--danger-color); background: transparent; padding: 8px 0; }
+        .btn-danger:hover { text-decoration: underline; }
+        
+        .hidden { display: none !important; }
+        .empty-state { grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-secondary); }
+
+        /* --- RESPONSIVE MEDIA QUERIES (Android & Mobile browsers) --- */
+        @media (max-width: 768px) {
+            .menu-toggle { display: block; }
+            .collection-title { display: none; } /* Hide title on mobile to make room for search */
+            
+            .header { padding: 0 15px; }
+            .content-area { padding: 15px; }
+
+            /* Sidebar sliding off canvas */
+            .sidebar { position: fixed; height: 100%; top: 0; left: 0; transform: translateX(-100%); width: 280px; }
+            .sidebar.active { transform: translateX(0); }
+
+            /* Compact Header Actions */
+            .add-btn-text { display: none; } /* Hide the word 'Add' */
+            
+            /* View Mode Tweaks */
+            .view-grid { grid-template-columns: 1fr; gap: 15px; } /* Single column full width */
+            
+            /* Fix List view on tiny screens */
+            .view-list .bookmark-card { height: auto; flex-direction: column; }
+            .view-list .card-cover { width: 100%; height: 120px; }
+            .view-list .card-body { align-items: flex-start; gap: 8px; flex-direction: column; }
+            .view-list .card-footer { min-width: auto; justify-content: flex-start; }
+            .view-list .card-title, .view-list .card-desc { min-width: 100%; }
+
+            /* Modal spacing for mobile */
+            .modal-overlay { padding: 10px; align-items: flex-end; /* Slide up from bottom slightly */ }
+            .modal { max-height: 85vh; border-radius: 12px 12px 0 0; margin-bottom: -10px; }
+            .modal-footer { border-radius: 0; flex-wrap: wrap; gap: 10px; }
+            .modal-footer .btn-danger { width: 100%; text-align: left; padding-left: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Mobile Overlay -->
+    <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <!-- Clickable Profile Section -->
+        <div class="user-profile" onclick="openProfileModal()" title="Edit Profile">
+            <div class="user-avatar" id="sidebar-avatar">JD</div>
+            <div class="user-info">
+                <div style="font-size: 14px; font-weight: 600;" id="sidebar-name">John Doe</div>
+                <div style="font-size: 12px; color: var(--text-secondary);">Free Plan</div>
+            </div>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-section-title">
+                My Collections
+                <i class="fa-solid fa-plus" onclick="openCollectionModal()" style="cursor: pointer; padding: 4px; border-radius: 4px;" title="Add Collection" onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background='transparent'"></i>
+            </div>
+            <div id="collections-list"></div>
+        </div>
+
+        <div class="sidebar-footer">
+            <!-- All Bookmarks button right above export options -->
+            <button class="nav-item active" id="btn-all-bookmarks" onclick="filterByCollection('all', 'All Bookmarks', this)">
+                <i class="fa-solid fa-bookmark icon-main"></i> All Bookmarks
+                <span class="item-count" id="total-count">0</span>
+            </button>
+            <div style="height: 1px; background: var(--border-color); margin: 4px 0 8px 0;"></div>
+
+            <button class="btn-sidebar-action" onclick="exportData()" title="Download Backup">
+                <i class="fa-solid fa-download"></i> Export Data
+            </button>
+            <input type="file" id="import-input" accept="application/json" class="hidden" onchange="importData(event)">
+            <button class="btn-sidebar-action" onclick="document.getElementById('import-input').click()" title="Upload Backup">
+                <i class="fa-solid fa-upload"></i> Import Data
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <header class="header">
+            <button class="menu-toggle" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></button>
+            <div class="collection-title" id="main-header-title">All Bookmarks</div>
+            
+            <div class="search-container">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" class="search-input" placeholder="Search...">
+            </div>
+            
+            <div class="header-actions">
+                <div style="display: flex; background: var(--bg-hover); border-radius: 8px; padding: 2px;">
+                    <button class="icon-btn active" id="btn-view-grid" onclick="setViewMode('grid')" title="Grid View">
+                        <i class="fa-solid fa-border-all"></i>
+                    </button>
+                    <button class="icon-btn" id="btn-view-list" onclick="setViewMode('list')" title="List View">
+                        <i class="fa-solid fa-list"></i>
+                    </button>
+                </div>
+
+                <button class="icon-btn" onclick="openBookmarkModal()" title="Add new bookmark" style="background: var(--accent-color); color: white;">
+                    <i class="fa-solid fa-plus"></i><span class="add-btn-text">Add</span>
+                </button>
+            </div>
+        </header>
+
+        <div class="content-area">
+            <div class="view-grid" id="bookmark-container"></div>
+        </div>
+    </main>
+
+    <!-- Profile Edit Modal -->
+    <div class="modal-overlay" id="profile-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Edit Profile</h3>
+                <button class="icon-btn" onclick="closeModals()"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="profile-form">
+                <div class="modal-body">
+                    <input type="hidden" id="prof-photo-base64">
+                    <div class="form-group">
+                        <label>Display Name</label>
+                        <input type="text" id="prof-name-input" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Photo URL (Optional)</label>
+                        <input type="url" id="prof-photo-input" class="form-control" placeholder="https://example.com/photo.jpg">
+                    </div>
+                    <div class="form-group">
+                        <label>OR Upload Local Photo</label>
+                        <div style="display: flex; gap: 8px;">
+                            <input type="file" id="prof-photo-file" accept="image/*" class="form-control" style="flex: 1;">
+                            <button type="button" class="btn btn-secondary" onclick="clearLocalImage('prof')" title="Remove current photo" style="padding: 6px 12px;">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </div>
+                        <p style="font-size: 11px; color: var(--text-secondary); margin-top: 6px;">Recommended < 1MB to save browser memory.</p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <div style="margin-left: auto; display: flex; gap: 8px;">
+                        <button type="button" class="btn btn-secondary" onclick="closeModals()">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save Profile</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Bookmark Modal -->
+    <div class="modal-overlay" id="bookmark-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="bm-modal-title">Add Bookmark</h3>
+                <button class="icon-btn" onclick="closeModals()"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="bookmark-form">
+                <div class="modal-body">
+                    <input type="hidden" id="bm-id">
+                    <input type="hidden" id="bm-img-base64">
+                    <div class="form-group">
+                        <label>URL</label>
+                        <input type="url" id="bm-url" class="form-control" placeholder="https://example.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Title</label>
+                        <input type="text" id="bm-title" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Collection</label>
+                        <select id="bm-collection" class="form-control">
+                            <option value="none">Unsorted</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Description</label>
+                        <textarea id="bm-desc" class="form-control"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Cover Image URL (Optional)</label>
+                        <input type="url" id="bm-img" class="form-control" placeholder="https://example.com/cover.jpg">
+                    </div>
+                    <div class="form-group">
+                        <label>OR Upload Local Cover Image</label>
+                        <div style="display: flex; gap: 8px;">
+                            <input type="file" id="bm-img-file" accept="image/*" class="form-control" style="flex: 1;">
+                            <button type="button" class="btn btn-secondary" onclick="clearLocalImage('bm')" title="Remove current cover" style="padding: 6px 12px;">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </div>
+                        <p style="font-size: 11px; color: var(--text-secondary); margin-top: 6px;">Overrides the URL above. Recommended < 1MB.</p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger hidden" id="bm-btn-delete">Delete</button>
+                    <div style="margin-left: auto; display: flex; gap: 8px;">
+                        <button type="button" class="btn btn-secondary" onclick="closeModals()">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save Bookmark</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Collection Modal -->
+    <div class="modal-overlay" id="collection-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="col-modal-title">Create Collection</h3>
+                <button class="icon-btn" onclick="closeModals()"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="collection-form">
+                <div class="modal-body">
+                    <input type="hidden" id="col-id">
+                    <input type="hidden" id="col-icon-base64">
+                    <div class="form-group">
+                        <label>Collection Name</label>
+                        <input type="text" id="col-name" class="form-control" placeholder="e.g. Design Inspiration" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Color Tag (Default Icon)</label>
+                        <input type="color" id="col-color" class="form-control" value="#32ADE6">
+                    </div>
+                    <div class="form-group">
+                        <label>OR Upload Custom Icon</label>
+                        <div style="display: flex; gap: 8px;">
+                            <input type="file" id="col-icon-file" accept="image/*" class="form-control" style="flex: 1;">
+                            <button type="button" class="btn btn-secondary" onclick="clearLocalImage('col')" title="Remove current icon" style="padding: 6px 12px;">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </div>
+                        <p style="font-size: 11px; color: var(--text-secondary); margin-top: 6px;">Overrides the color tag. Recommended < 500KB.</p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger hidden" id="col-btn-delete">Delete Collection</button>
+                    <div style="margin-left: auto; display: flex; gap: 8px;">
+                        <button type="button" class="btn btn-secondary" onclick="closeModals()">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save Collection</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // --- Mobile Sidebar Toggle ---
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('active');
+            document.getElementById('sidebar-overlay').classList.toggle('active');
+        }
+
+        // --- Utility: Convert File to Base64 ---
+        function getBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+            });
+        }
+
+        // --- Utility: Clear File Input Data ---
+        function clearLocalImage(type) {
+            if (type === 'prof') {
+                document.getElementById('prof-photo-file').value = '';
+                document.getElementById('prof-photo-input').value = '';
+                document.getElementById('prof-photo-base64').value = '';
+            } else if (type === 'col') {
+                document.getElementById('col-icon-file').value = '';
+                document.getElementById('col-icon-base64').value = '';
+            } else if (type === 'bm') {
+                document.getElementById('bm-img-file').value = '';
+                document.getElementById('bm-img').value = '';
+                document.getElementById('bm-img-base64').value = '';
+            }
+        }
+
+        // --- State Management ---
+        let currentCollectionView = 'all';
+        let currentViewMode = localStorage.getItem('raindrop_view') || 'grid';
+
+        let userProfile = JSON.parse(localStorage.getItem('raindrop_user')) || { name: 'John Doe', photoUrl: '' };
+
+        let collections = JSON.parse(localStorage.getItem('raindrop_collections')) || [
+            { id: 'c1', name: 'Design Inspiration', color: '#FF9F0A', iconUrl: null },
+            { id: 'c2', name: 'Web Development', color: '#32ADE6', iconUrl: null }
+        ];
+        
+        let bookmarks = JSON.parse(localStorage.getItem('raindrop_bookmarks')) || [
+            { id: '1', url: "https://dribbble.com", title: "Dribbble", desc: "Discover the world's top designers.", domain: "dribbble.com", date: "Just now", img: "https://images.unsplash.com/photo-1561070791-2526d30994b5?auto=format&fit=crop&q=80&w=600&h=300", collectionId: 'c1' },
+            { id: '2', url: "https://github.com", title: "GitHub", desc: "Where the world builds software.", domain: "github.com", date: "Just now", img: "https://images.unsplash.com/photo-1618401471353-b98afee0b2eb?auto=format&fit=crop&q=80&w=600&h=300", collectionId: 'c2' }
+        ];
+
+        localStorage.setItem('raindrop_user', JSON.stringify(userProfile));
+        localStorage.setItem('raindrop_collections', JSON.stringify(collections));
+        localStorage.setItem('raindrop_bookmarks', JSON.stringify(bookmarks));
+
+        // --- Core Functions ---
+        function saveState() {
+            localStorage.setItem('raindrop_collections', JSON.stringify(collections));
+            localStorage.setItem('raindrop_bookmarks', JSON.stringify(bookmarks));
+            renderSidebar();
+            renderBookmarks();
+            populateCollectionDropdown();
+        }
+
+        function extractDomain(url) { try { return new URL(url).hostname.replace('www.', ''); } catch (e) { return url; } }
+        function getFavicon(domain) { return `https://www.google.com/s2/favicons?domain=${domain}&sz=32`; }
+
+        function setViewMode(mode) {
+            currentViewMode = mode;
+            localStorage.setItem('raindrop_view', mode);
+            const container = document.getElementById('bookmark-container');
+            container.className = mode === 'grid' ? 'view-grid' : 'view-list';
+            document.getElementById('btn-view-grid').classList.toggle('active', mode === 'grid');
+            document.getElementById('btn-view-list').classList.toggle('active', mode === 'list');
+        }
+
+        function exportData() {
+            const dataToExport = { version: "1.0", exportDate: new Date().toISOString(), userProfile, collections, bookmarks };
+            const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = `raindrop_backup_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+            
+            // Close sidebar on mobile after clicking export
+            if (window.innerWidth <= 768) toggleSidebar();
+        }
+
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    if (!importedData.collections || !importedData.bookmarks) { alert("Invalid backup file."); return; }
+                    if (confirm("Import this backup? This overwrites your current data.")) {
+                        collections = importedData.collections;
+                        bookmarks = importedData.bookmarks;
+                        if(importedData.userProfile) { userProfile = importedData.userProfile; localStorage.setItem('raindrop_user', JSON.stringify(userProfile)); renderProfile(); }
+                        currentCollectionView = 'all'; document.getElementById('main-header-title').innerText = "All Bookmarks";
+                        
+                        // Update active state to All Bookmarks
+                        document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+                        document.getElementById('btn-all-bookmarks').classList.add('active');
+
+                        saveState(); alert("Data imported successfully!");
+                    }
+                } catch (error) { alert("Error reading file. Ensure it is a valid JSON backup."); }
+                event.target.value = ''; 
+                // Close sidebar on mobile after importing
+                if (window.innerWidth <= 768) toggleSidebar();
+            };
+            reader.readAsText(file);
+        }
+
+        // --- Renders ---
+        function renderProfile() {
+            document.getElementById('sidebar-name').innerText = userProfile.name;
+            const avatarEl = document.getElementById('sidebar-avatar');
+            if (userProfile.photoUrl && userProfile.photoUrl.trim() !== '') {
+                avatarEl.style.backgroundImage = `url('${userProfile.photoUrl}')`;
+                avatarEl.innerText = '';
+            } else {
+                avatarEl.style.backgroundImage = 'none';
+                avatarEl.innerText = userProfile.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+            }
+        }
+
+        function renderSidebar() {
+            document.getElementById('total-count').innerText = bookmarks.length;
+            const list = document.getElementById('collections-list');
+            list.innerHTML = '';
+
+            collections.forEach(col => {
+                const count = bookmarks.filter(b => b.collectionId === col.id).length;
+                const wrapper = document.createElement('div');
+                wrapper.className = 'nav-item-wrapper';
+                const activeClass = currentCollectionView === col.id ? 'active' : '';
+
+                let iconHtml = col.iconUrl 
+                    ? `<img src="${col.iconUrl}" class="collection-icon-img">`
+                    : `<i class="fa-solid fa-folder icon-main" style="color: ${col.color};"></i>`;
+
+                wrapper.innerHTML = `
+                    <button class="nav-item ${activeClass}" onclick="filterByCollection('${col.id}', '${col.name}', this)">
+                        ${iconHtml} &nbsp;${col.name}
+                        <span class="item-count">${count}</span>
+                    </button>
+                    <button class="nav-item-edit" onclick="openCollectionModal('${col.id}')" title="Edit Collection">
+                        <i class="fa-solid fa-pen"></i>
+                    </button>
+                `;
+                list.appendChild(wrapper);
+            });
+        }
+
+        function filterByCollection(id, title, element) {
+            currentCollectionView = id;
+            document.getElementById('main-header-title').innerText = title;
+            document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+            if(element) element.classList.add('active');
+            renderBookmarks();
+            
+            // Auto close sidebar on mobile when a collection is selected
+            if (window.innerWidth <= 768) {
+                document.getElementById('sidebar').classList.remove('active');
+                document.getElementById('sidebar-overlay').classList.remove('active');
+            }
+        }
+
+        function renderBookmarks() {
+            const container = document.getElementById('bookmark-container');
+            container.innerHTML = ''; 
+
+            let filteredBookmarks = currentCollectionView !== 'all' 
+                ? bookmarks.filter(b => b.collectionId === currentCollectionView) 
+                : bookmarks;
+
+            if(filteredBookmarks.length === 0) {
+                container.innerHTML = `<div class="empty-state"><i class="fa-solid fa-bookmark" style="font-size: 40px; margin-bottom: 10px; opacity: 0.5;"></i><h3>No bookmarks here</h3><p>Save a link to see it here.</p></div>`;
+                return;
+            }
+
+            [...filteredBookmarks].reverse().forEach(bm => {
+                const card = document.createElement('div');
+                card.className = 'bookmark-card';
+                card.innerHTML = `
+                    <button class="card-edit-btn" onclick="openBookmarkModal('${bm.id}'); event.stopPropagation();" title="Edit">
+                        <i class="fa-solid fa-pen"></i>
+                    </button>
+                    <div class="card-cover" style="background-image: url('${bm.img || ''}')" onclick="window.open('${bm.url}', '_blank')"></div>
+                    <div class="card-body" onclick="window.open('${bm.url}', '_blank')">
+                        <div class="card-title">${bm.title}</div>
+                        <div class="card-desc">${bm.desc}</div>
+                        <div class="card-footer">
+                            <img src="${getFavicon(bm.domain)}" class="favicon" onerror="this.style.display='none'">
+                            <span class="domain">${bm.domain}</span>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function populateCollectionDropdown() {
+            const select = document.getElementById('bm-collection');
+            select.innerHTML = '<option value="none">Unsorted</option>';
+            collections.forEach(col => { select.innerHTML += `<option value="${col.id}">${col.name}</option>`; });
+        }
+
+        // --- Modals Logic ---
+        function closeModals() {
+            document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active'));
+        }
+
+        function openProfileModal() {
+            if (window.innerWidth <= 768) toggleSidebar(); // Close sidebar if mobile
+            
+            document.getElementById('prof-name-input').value = userProfile.name;
+            const pUrl = userProfile.photoUrl || '';
+            
+            // Set input url if it's not base64, otherwise save base64 to hidden state
+            document.getElementById('prof-photo-input').value = pUrl.startsWith('data:image') ? '' : pUrl;
+            document.getElementById('prof-photo-base64').value = pUrl.startsWith('data:image') ? pUrl : '';
+            document.getElementById('prof-photo-file').value = ''; 
+            
+            document.getElementById('profile-modal').classList.add('active');
+        }
+
+        function openBookmarkModal(id = null) {
+            const form = document.getElementById('bookmark-form');
+            const btnDelete = document.getElementById('bm-btn-delete');
+            form.reset();
+            document.getElementById('bm-img-file').value = '';
+            document.getElementById('bm-img-base64').value = '';
+            
+            if (id) {
+                const bm = bookmarks.find(b => b.id === id);
+                document.getElementById('bm-modal-title').innerText = "Edit Bookmark";
+                document.getElementById('bm-id').value = bm.id;
+                document.getElementById('bm-url').value = bm.url;
+                document.getElementById('bm-title').value = bm.title;
+                document.getElementById('bm-desc').value = bm.desc;
+                
+                const imgUrl = bm.img || '';
+                document.getElementById('bm-img').value = imgUrl.startsWith('data:image') ? '' : imgUrl;
+                document.getElementById('bm-img-base64').value = imgUrl.startsWith('data:image') ? imgUrl : '';
+                
+                document.getElementById('bm-collection').value = bm.collectionId || 'none';
+                btnDelete.classList.remove('hidden');
+            } else {
+                document.getElementById('bm-modal-title').innerText = "Add Bookmark";
+                document.getElementById('bm-id').value = '';
+                document.getElementById('bm-collection').value = currentCollectionView !== 'all' ? currentCollectionView : 'none';
+                btnDelete.classList.add('hidden');
+            }
+            document.getElementById('bookmark-modal').classList.add('active');
+        }
+
+        function openCollectionModal(id = null) {
+            if (window.innerWidth <= 768) toggleSidebar(); // Close sidebar if mobile
+            
+            const form = document.getElementById('collection-form');
+            const btnDelete = document.getElementById('col-btn-delete');
+            form.reset();
+            document.getElementById('col-icon-file').value = ''; 
+            document.getElementById('col-icon-base64').value = '';
+            
+            if (id) {
+                const col = collections.find(c => c.id === id);
+                document.getElementById('col-modal-title').innerText = "Edit Collection";
+                document.getElementById('col-id').value = col.id;
+                document.getElementById('col-name').value = col.name;
+                document.getElementById('col-color').value = col.color;
+                document.getElementById('col-icon-base64').value = col.iconUrl || '';
+                
+                btnDelete.classList.remove('hidden');
+            } else {
+                document.getElementById('col-modal-title').innerText = "Create Collection";
+                document.getElementById('col-id').value = '';
+                document.getElementById('col-color').value = '#007aff'; 
+                btnDelete.classList.add('hidden');
+            }
+            document.getElementById('collection-modal').classList.add('active');
+        }
+
+        // --- Event Listeners (Async forms for file reading) ---
+
+        document.getElementById('profile-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const fileInput = document.getElementById('prof-photo-file');
+            
+            // Priority: File Upload > URL Input > Hidden Base64 State
+            let photoUrl = document.getElementById('prof-photo-input').value || document.getElementById('prof-photo-base64').value;
+
+            if (fileInput.files.length > 0) {
+                try { photoUrl = await getBase64(fileInput.files[0]); } 
+                catch(err) { alert("Error processing image"); }
+            }
+
+            userProfile.name = document.getElementById('prof-name-input').value;
+            userProfile.photoUrl = photoUrl;
+            
+            localStorage.setItem('raindrop_user', JSON.stringify(userProfile));
+            renderProfile(); closeModals();
+        });
+
+        document.getElementById('collection-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('col-id').value;
+            const fileInput = document.getElementById('col-icon-file');
+            
+            let currentIconUrl = document.getElementById('col-icon-base64').value || null;
+
+            if (fileInput.files.length > 0) {
+                try { currentIconUrl = await getBase64(fileInput.files[0]); } 
+                catch(err) { alert("Error processing image"); }
+            }
+
+            const colData = { 
+                name: document.getElementById('col-name').value, 
+                color: document.getElementById('col-color').value,
+                iconUrl: currentIconUrl
+            };
+
+            if (id) {
+                const index = collections.findIndex(c => c.id === id);
+                collections[index] = { ...collections[index], ...colData };
+                if (currentCollectionView === id) document.getElementById('main-header-title').innerText = colData.name;
+            } else {
+                collections.push({ id: 'c_' + Date.now(), ...colData });
+            }
+            saveState(); closeModals();
+        });
+
+        document.getElementById('bookmark-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('bm-id').value;
+            const url = document.getElementById('bm-url').value;
+            const collectionId = document.getElementById('bm-collection').value;
+            const fileInput = document.getElementById('bm-img-file');
+            
+            let imgData = document.getElementById('bm-img').value || document.getElementById('bm-img-base64').value;
+
+            if (fileInput.files.length > 0) {
+                try { imgData = await getBase64(fileInput.files[0]); } 
+                catch(err) { alert("Error processing cover image"); }
+            }
+            
+            const bmData = {
+                url: url,
+                title: document.getElementById('bm-title').value,
+                desc: document.getElementById('bm-desc').value,
+                img: imgData,
+                domain: extractDomain(url),
+                collectionId: collectionId === 'none' ? null : collectionId,
+                date: "Just now"
+            };
+
+            if (id) {
+                const index = bookmarks.findIndex(b => b.id === id);
+                bookmarks[index] = { ...bookmarks[index], ...bmData };
+            } else {
+                bookmarks.push({ id: Date.now().toString(), ...bmData });
+            }
+            saveState(); closeModals();
+        });
+
+        document.getElementById('bm-btn-delete').addEventListener('click', () => {
+            if (confirm("Delete this bookmark?")) {
+                bookmarks = bookmarks.filter(b => b.id !== document.getElementById('bm-id').value);
+                saveState(); closeModals();
+            }
+        });
+
+        document.getElementById('col-btn-delete').addEventListener('click', () => {
+            if (confirm("Delete this collection? (Bookmarks inside will be moved to Unsorted)")) {
+                const idToDelete = document.getElementById('col-id').value;
+                collections = collections.filter(c => c.id !== idToDelete);
+                bookmarks = bookmarks.map(b => b.collectionId === idToDelete ? { ...b, collectionId: null } : b);
+                
+                if (currentCollectionView === idToDelete) {
+                    filterByCollection('all', 'All Bookmarks', document.getElementById('btn-all-bookmarks')); 
+                } else {
+                    saveState();
+                }
+                closeModals();
+            }
+        });
+
+        document.querySelectorAll('.modal-overlay').forEach(overlay => {
+            overlay.addEventListener('click', (e) => { 
+                // Only close if clicking exactly on the overlay background, not the modal itself
+                if (e.target === overlay && overlay.id !== 'sidebar-overlay') {
+                    closeModals(); 
+                }
+            });
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderProfile(); setViewMode(currentViewMode); populateCollectionDropdown(); renderSidebar(); renderBookmarks();
+        });
+    </script>
+</body>
+</html>
